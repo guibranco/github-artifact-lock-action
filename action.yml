@@ -1,0 +1,61 @@
+name: artifact-lock
+author: guibranco
+description: Lock GitHub Actions step using artifact as a mutex
+
+branding:
+  icon: lock
+  color: green
+
+inputs:
+  lock-name:
+    description: Name of the lock (used as artifact name)
+    required: true
+    default: test-lock
+  wait-seconds:
+    description: Time to wait between retries
+    required: false
+    default: '10'
+  max-attempts:
+    description: Max number of attempts before giving up
+    required: false
+    default: '30'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Acquire lock 🔐
+      shell: bash
+      run: |
+        echo "🔐 Trying to acquire lock: '${{ inputs.lock-name }}'"
+
+        TOKEN="${{ github.token }}"
+        REPO="${{ github.repository }}"
+        API_URL="https://api.github.com/repos/$REPO/actions/artifacts"
+        LOCK_NAME="${{ inputs.lock-name }}"
+        WAIT=${{ inputs.wait-seconds }}
+        MAX=${{ inputs.max-attempts }}
+
+        attempt=0
+        while [[ $attempt -lt $MAX ]]; do
+          echo "🔍 Checking for existing lock artifact..."
+          response=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL")
+          lock_id=$(echo "$response" | jq -r ".artifacts[] | select(.name == \"$LOCK_NAME\") | .id")
+
+          if [[ -z "$lock_id" || "$lock_id" == "null" ]]; then
+            echo "✅ Lock is free. Acquiring..."
+            mkdir -p tmp-lock && echo "locked" > tmp-lock/lock.txt
+            zip -r tmp-lock.zip tmp-lock > /dev/null
+
+            curl -s -X POST               -H "Authorization: Bearer $TOKEN"               -H "Content-Type: application/zip"               --data-binary "@tmp-lock.zip"               "$API_URL?name=$LOCK_NAME"
+
+            echo "✅ Lock acquired."
+            exit 0
+          else
+            echo "⏳ Lock is active (artifact ID: $lock_id). Waiting $WAIT sec..."
+            sleep "$WAIT"
+            attempt=$((attempt+1))
+          fi
+        done
+
+        echo "❌ Failed to acquire lock after $MAX attempts."
+        exit 1
