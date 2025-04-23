@@ -1,0 +1,4 @@
+theme: jekyll-theme-cayman
+title: '🔐 :octocat: Step-level locking in GitHub Actions using artifact-based mutexes — serialize workflow steps across jobs or PRs with no external services.'
+description: 'A reusable composite GitHub Action to simulate a step-level mutex lock using GitHub Artifacts as the locking mechanism. Useful for serializing access to shared resources (like test environments) across workflows or pull requests.'
+show_downloads: true
