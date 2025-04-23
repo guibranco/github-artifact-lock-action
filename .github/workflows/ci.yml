@@ -22,18 +22,18 @@ jobs:
         id: checkout
         uses: actions/checkout@v4
 
-      - name: Test Local Action
-        id: test-action
+      - name: Test lock acquire
         uses: ./
         with:
-          mysql-host: ${{ secrets.MYSQL_HOST }}
-          mysql-user: ${{ secrets.MYSQL_USER }}
-          mysql-database: ${{ secrets.MYSQL_DATABASE }}
-          operation: "test"
+          lock-name: test-lock
 
-      - name: Print Output
-        id: output
-        run: echo "${{ steps.test-action.outputs.time }}"
+      - run: echo "Holding the lock..."
+
+      - name: Release lock
+        if: always()
+        uses: ./release-lock/action.yml
+        with:
+          lock-name: test-lock
 
   create-release:
     name: Create release
@@ -49,7 +49,7 @@ jobs:
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.1
         with:
-          versionSpec: '6.x'
+          versionSpec: '5.x'
 
       - name: Determine Version
         id: gitversion
