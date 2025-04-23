@@ -31,7 +31,7 @@ jobs:
 
       - name: Release lock
         if: always()
-        uses: ./release-lock/action.yml
+        uses: ./release-lock/
         with:
           lock-name: test-lock
 
