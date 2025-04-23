@@ -1,0 +1,35 @@
+name: release-artifact-lock
+author: guibranco
+description: Release lock by deleting the artifact
+
+branding:
+  icon: unlock
+  color: green
+
+inputs:
+  lock-name:
+    description: Name of the lock (used as artifact name)
+    required: true
+    default: test-lock
+
+runs:
+  using: "composite"
+  steps:
+    - name: Release lock 🔓
+      shell: bash
+      run: |
+        echo "🔓 Releasing lock: '${{ inputs.lock-name }}'"
+        TOKEN="${{ github.token }}"
+        REPO="${{ github.repository }}"
+        API_URL="https://api.github.com/repos/$REPO/actions/artifacts"
+        LOCK_NAME="${{ inputs.lock-name }}"
+
+        response=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL")
+        lock_id=$(echo "$response" | jq -r ".artifacts[] | select(.name == \"$LOCK_NAME\") | .id")
+
+        if [[ -n "$lock_id" && "$lock_id" != "null" ]]; then
+          curl -s -X DELETE             -H "Authorization: Bearer $TOKEN"             "$API_URL/$lock_id"
+          echo "✅ Lock released."
+        else
+          echo "⚠️ No lock found."
+        fi
