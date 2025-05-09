@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Acquire test lock 🔐
-        uses: guibranco/github-artifact-lock-action@v1
+        uses: guibranco/github-artifact-lock-action@v2.0.5
         with:
           lock-name: test-lock
 
@@ -75,7 +75,7 @@ jobs:
 
       - name: Release test lock 🔓
         if: always()
-        uses: guibranco/github-artifact-lock-action/release-lock@v1
+        uses: guibranco/github-artifact-lock-action/release-lock@v2.0.5
         with:
           lock-name: test-lock
 ````
@@ -97,7 +97,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Acquire deployment lock 🔐
-        uses: guibranco/github-artifact-lock-action@v1
+        uses: guibranco/github-artifact-lock-action@v2.0.5
         with:
           lock-name: staging-environment-lock
           wait-seconds: 30
@@ -108,7 +108,7 @@ jobs:
 
       - name: Release deployment lock 🔓
         if: always()
-        uses: guibranco/github-artifact-lock-action/release-lock@v1
+        uses: guibranco/github-artifact-lock-action/release-lock@v2.0.5
         with:
           lock-name: staging-environment-lock
 ```
@@ -130,12 +130,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Acquire database lock 🔐
-        uses: guibranco/github-artifact-lock-action@v1
+        uses: guibranco/github-artifact-lock-action@v2.0.5
         with:
           lock-name: db-lock
 
       - name: Acquire API lock 🔐
-        uses: guibranco/github-artifact-lock-action@v1
+        uses: guibranco/github-artifact-lock-action@v2.0.5
         with:
           lock-name: api-lock
 
@@ -144,13 +144,13 @@ jobs:
 
       - name: Release API lock 🔓
         if: always()
-        uses: guibranco/github-artifact-lock-action/release-lock@v1
+        uses: guibranco/github-artifact-lock-action/release-lock@v2.0.5
         with:
           lock-name: api-lock
 
       - name: Release database lock 🔓
         if: always()
-        uses: guibranco/github-artifact-lock-action/release-lock@v1
+        uses: guibranco/github-artifact-lock-action/release-lock@v2.0.5
         with:
           lock-name: db-lock
 ```
