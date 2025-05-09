@@ -52,6 +52,13 @@ This action doesn't provide explicit outputs, but creates and removes artifacts 
 ### Basic Usage
 
 ```yaml
+name: test
+on: [push, pull_request]
+
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -67,31 +74,38 @@ jobs:
         run: echo "Tests running safely..."
 
       - name: Release test lock 🔓
-        if: always()  # Important: ensures lock release even on failure
+        if: always()
         uses: guibranco/github-artifact-lock-action/release-lock@v1
         with:
           lock-name: test-lock
-```
+````
 
 ### Advanced Configuration
 
 ```yaml
+name: deploy
+on: [push]
+
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Acquire deployment lock 🔐
         uses: guibranco/github-artifact-lock-action@v1
         with:
           lock-name: staging-environment-lock
           wait-seconds: 30
           max-attempts: 20
-      
+
       - name: Deploy to staging 🚀
         run: ./deploy.sh --env staging
-      
+
       - name: Release deployment lock 🔓
         if: always()
         uses: guibranco/github-artifact-lock-action/release-lock@v1
@@ -102,31 +116,38 @@ jobs:
 ### Multiple Locks
 
 ```yaml
+name: integration
+on: [push]
+
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   integration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Acquire database lock 🔐
         uses: guibranco/github-artifact-lock-action@v1
         with:
           lock-name: db-lock
-      
+
       - name: Acquire API lock 🔐
         uses: guibranco/github-artifact-lock-action@v1
         with:
           lock-name: api-lock
-      
+
       - name: Run integration tests 🧪
         run: npm run integration-tests
-      
+
       - name: Release API lock 🔓
         if: always()
         uses: guibranco/github-artifact-lock-action/release-lock@v1
         with:
           lock-name: api-lock
-      
+
       - name: Release database lock 🔓
         if: always()
         uses: guibranco/github-artifact-lock-action/release-lock@v1
@@ -149,18 +170,18 @@ The action creates a locking mechanism by leveraging GitHub Artifacts storage:
 
 This action works well with:
 
-- Deployment actions like `actions/deploy-pages`
-- Testing frameworks
-- Database migration tools
-- Any workflow requiring resource coordination
+* Deployment actions like `actions/deploy-pages`
+* Testing frameworks
+* Database migration tools
+* Any workflow requiring resource coordination
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-- **Lock never releases**: Ensure the release step has `if: always()` to run even when prior steps fail
-- **Timeouts**: Adjust `wait-seconds` and `max-attempts` for longer-running operations
-- **Permissions**: Ensure workflow has sufficient permissions to read/write artifacts
+* **Lock never releases**: Ensure the release step has `if: always()` to run even when prior steps fail
+* **Timeouts**: Adjust `wait-seconds` and `max-attempts` for longer-running operations
+* **Permissions**: Ensure workflow has sufficient permissions to read/write artifacts
 
 ### Debugging
 
@@ -182,5 +203,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👏 Acknowledgments
 
-- Inspired by the need for coordinating concurrent GitHub workflows
-- Thanks to all contributors who helped improve this action
+* Inspired by the need for coordinating concurrent GitHub workflows
+* Thanks to all contributors who helped improve this action
