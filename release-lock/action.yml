@@ -19,16 +19,20 @@ runs:
       shell: bash
       run: |
         echo "🔓 Releasing lock: '${{ inputs.lock-name }}'"
+
         TOKEN="${{ github.token }}"
         REPO="${{ github.repository }}"
-        API_URL="https://api.github.com/repos/$REPO/actions/artifacts"
         LOCK_NAME="${{ inputs.lock-name }}"
+        API_URL="https://api.github.com/repos/$REPO/actions/artifacts"
 
-        response=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL")
-        lock_id=$(echo "$response" | jq -r ".artifacts[] | select(.name == \"$LOCK_NAME\") | .id")
+        response=$(curl -s -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" "$API_URL?name=$LOCK_NAME")
+        lock_id=$(echo "$response" | jq -r '.artifacts[0].id')
 
         if [[ -n "$lock_id" && "$lock_id" != "null" ]]; then
-          curl -s -X DELETE             -H "Authorization: Bearer $TOKEN"             "$API_URL/$lock_id"
+          curl -s -X DELETE \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$API_URL/$lock_id"
           echo "✅ Lock released."
         else
           echo "⚠️ No lock found."
