@@ -1,6 +1,6 @@
-name: artifact-lock
+name: acquire-artifact-lock
 author: guibranco
-description: Lock GitHub Actions step using artifact as a mutex
+description: Acquire lock using artifact existence as a locking mechanism
 
 branding:
   icon: lock
@@ -11,62 +11,62 @@ inputs:
     description: Name of the lock (used as artifact name)
     required: true
     default: test-lock
-  wait-seconds:
-    description: Time to wait between retries
+  retry-wait:
+    description: Seconds to wait before retrying
     required: false
-    default: '10'
-  max-attempts:
-    description: Max number of attempts before giving up
+    default: "10"
+  retry-max:
+    description: Maximum number of retries
     required: false
-    default: '30'
+    default: "30"
 
 runs:
   using: "composite"
   steps:
-    - name: Acquire lock 🔐
+    - name: Try to acquire lock 🔐
       shell: bash
       run: |
-        echo "🔐 Trying to acquire lock: '${{ inputs.lock-name }}'"
+        echo "🔐 Acquiring lock: '${{ inputs.lock-name }}'"
 
         TOKEN="${{ github.token }}"
         REPO="${{ github.repository }}"
-        API_URL="https://api.github.com/repos/$REPO/actions/artifacts"
         LOCK_NAME="${{ inputs.lock-name }}"
-        WAIT=${{ inputs.wait-seconds }}
-        MAX=${{ inputs.max-attempts }}
+        API_URL="https://api.github.com/repos/$REPO/actions/artifacts"
 
         attempt=0
-        while [[ $attempt -lt $MAX ]]; do
-          echo "🔍 Checking for existing lock artifact..."
-          response=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_URL")
-          lock_id=$(echo "$response" | jq -r ".artifacts[] | select(.name == \\"$LOCK_NAME\\") | .id")
+        while [[ $attempt -lt ${{ inputs.retry-max }} ]]; do
+          echo "🔍 Checking for existing lock (attempt $((attempt+1))/${{ inputs.retry-max }})..."
+          response=$(curl -s \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$API_URL?name=$LOCK_NAME")
+
+          lock_id=$(echo "$response" | jq -r '.artifacts[0].id')
 
           if [[ -z "$lock_id" || "$lock_id" == "null" ]]; then
-            echo "✅ Lock is free."
+            echo "✅ Lock is free. Proceeding to create artifact lock..."
+            mkdir -p _artifact-lock
+            echo "locked" > _artifact-lock/lock
             exit 0
-          else
-            echo "⏳ Lock is active (artifact ID: $lock_id). Waiting $WAIT sec..."
-            sleep "$WAIT"
-            attempt=$((attempt+1))
           fi
+
+          echo "⏳ Lock is still held. Waiting ${{ inputs.retry-wait }}s before retrying..."
+          attempt=$((attempt + 1))
+          sleep "${{ inputs.retry-wait }}"
         done
 
-        echo "❌ Failed to acquire lock after $MAX attempts."
+        echo "❌ Failed to acquire lock after ${{ inputs.retry-max }} attempts. Lock ID: $lock_id"
         exit 1
 
-    - name: Create lock artifact contents
-      shell: bash
-      run: |
-        mkdir -p tmp-lock
-        echo "locked" > tmp-lock/lock.txt
-
-    - name: Upload artifact to acquire lock 🔏
+    - name: Upload lock artifact 🔏
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.lock-name }}
-        path: tmp-lock/lock.txt
+        path: _artifact-lock/lock
         retention-days: 1
 
     - name: Confirm lock acquired ✅
+      if: success()
       shell: bash
       run: echo "✅ Lock acquired."
