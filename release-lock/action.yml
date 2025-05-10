@@ -6,6 +6,10 @@ branding:
   icon: unlock
   color: green
 
+permissions:
+  actions: write
+  contents: read
+
 inputs:
   lock-name:
     description: Name of the lock (used as artifact name)
