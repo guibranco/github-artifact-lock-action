@@ -29,11 +29,21 @@ runs:
         lock_id=$(echo "$response" | jq -r '.artifacts[0].id')
 
         if [[ -n "$lock_id" && "$lock_id" != "null" ]]; then
-          curl -s -X DELETE \
+          echo "🔒 Found lock with ID: $lock_id"
+          
+          http_response=$(curl -s -X DELETE \
             -H "Authorization: Bearer $TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            "$API_URL/$lock_id"
-          echo "✅ Lock released."
+            -w "%{http_code}" \
+            -o /dev/null \
+            "$API_URL/$lock_id")
+          
+          if [[ "$http_response" == "204" ]]; then
+            echo "✅ Lock with ID $lock_id successfully released (HTTP 204)."
+          else
+            echo "❌ Failed to release lock. Received HTTP status code: $http_response"
+            exit 1
+          fi
         else
           echo "⚠️ No lock found."
         fi
