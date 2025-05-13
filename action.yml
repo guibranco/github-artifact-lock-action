@@ -45,30 +45,21 @@ runs:
             -H "Accept: application/vnd.github+json" \
             "$API_URL?name=$LOCK_NAME")
 
-          total_count=$(echo "$response" | jq -r '.total_count')
-          echo "Found $total_count total artifacts"
-          
-          matching_artifacts=$(echo "$response" | jq -r --arg name "$LOCK_NAME" '.artifacts | map(select(.name == $name)) | length')
-          echo "Found $matching_artifacts artifacts with name '$LOCK_NAME'"
-          
-          if [[ "$matching_artifacts" -eq "0" ]]; then
+          lock_id=$(echo "$response" | jq -r '.artifacts[0].id')
+
+          if [[ -z "$lock_id" || "$lock_id" == "null" ]]; then
             echo "✅ Lock is free. Proceeding to create artifact lock..."
             mkdir -p _artifact-lock
             echo "locked" > _artifact-lock/lock
             exit 0
           fi
-          
-          if [[ "$matching_artifacts" -gt "0" ]]; then
-            matching_id=$(echo "$response" | jq -r --arg name "$LOCK_NAME" '.artifacts | map(select(.name == $name))[0].id')
-            echo "⚠️ Lock is held. Found artifact with ID: $matching_id"
-          fi
 
-          echo "⏳ Lock is still held. Waiting ${{ inputs.retry-wait }}s before retrying..."
+          echo "⏳ Lock is still held. Found artifact with ID: $lock_id. Waiting ${{ inputs.retry-wait }}s before retrying..."
           attempt=$((attempt + 1))
           sleep "${{ inputs.retry-wait }}"
         done
 
-        echo "❌ Failed to acquire lock after ${{ inputs.retry-max }} attempts."
+        echo "❌ Failed to acquire lock after ${{ inputs.retry-max }} attempts. Found artifact with ID: $lock_id"
         exit 1
 
     - name: Upload lock artifact 🔏
