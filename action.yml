@@ -64,7 +64,7 @@ runs:
 
     - name: Upload lock artifact 🔏
       if: success()
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: ${{ inputs.lock-name }}
         path: _artifact-lock/lock
